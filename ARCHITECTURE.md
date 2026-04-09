@@ -28,7 +28,6 @@ A serverless AWS project that simulates realistic application logs, injects anom
 - HIGH severity anomalies → **SNS** → email notification with Bedrock's plain-English incident summary
 
 ### Dashboard / API
-
 - **API Gateway** + **`query` Lambda** → reads DynamoDB → returns anomaly history as JSON
 - Optional: S3-hosted static HTML dashboard that polls the API and displays incidents
 
