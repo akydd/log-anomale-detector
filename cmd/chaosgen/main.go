@@ -13,7 +13,8 @@ import (
 )
 
 type payload struct {
-	Duration int `json:"duration"`
+	Type     string `json:"type"`
+	Duration int    `json:"duration"`
 }
 
 var (
@@ -92,27 +93,27 @@ func generateLatencyOutliers(dur time.Duration) int {
 
 func handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse, error) {
 	var p payload
-	if err := json.Unmarshal([]byte(req.Body), &p); err != nil || p.Duration <= 0 {
+	if err := json.Unmarshal([]byte(req.Body), &p); err != nil || p.Duration <= 0 || p.Type == "" {
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusBadRequest,
-			Body:       `{"error":"body must be JSON with a positive \"duration\" field in seconds"}`,
+			Body:       `{"error":"body must be JSON with a positive \"duration\" (seconds) and a \"type\" of 500-spike, brute-force, or latency"}`,
 		}, nil
 	}
 
 	dur := time.Duration(p.Duration) * time.Second
 	var count int
 
-	switch req.Path {
-	case "/chaos/500-spike":
+	switch p.Type {
+	case "500-spike":
 		count = generate500Spike(dur)
-	case "/chaos/brute-force":
+	case "brute-force":
 		count = generateBruteForce(dur)
-	case "/chaos/latency":
+	case "latency":
 		count = generateLatencyOutliers(dur)
 	default:
 		return events.APIGatewayProxyResponse{
-			StatusCode: http.StatusNotFound,
-			Body:       fmt.Sprintf("unknown path: %s", req.Path),
+			StatusCode: http.StatusBadRequest,
+			Body:       fmt.Sprintf(`{"error":"unknown type: %s"}`, p.Type),
 		}, nil
 	}
 
