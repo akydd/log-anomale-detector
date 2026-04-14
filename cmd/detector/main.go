@@ -6,6 +6,7 @@ import (
 	"akydd/log-anomale-detector/internal/adapters/out/sns"
 	"akydd/log-anomale-detector/internal/domain/classifier"
 	"context"
+	"os"
 
 	"fmt"
 	"log"
@@ -25,6 +26,15 @@ var c *classifier.Client
 
 // Clients are initialized here so that warm Lambda invocations can reuse it.
 func init() {
+	tableName = os.Getenv("TABLE_NAME")
+	if tableName == "" {
+		log.Fatalf("TABLE_NAME must be set")
+	}
+	snsTopicARN = os.Getenv("SNS_TOPIC_ARN")
+	if snsTopicARN == "" {
+		log.Fatalf("SNS_TOPIC_ARN must be set")
+	}
+
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		log.Fatalf("loading AWS config: %v", err)
@@ -52,7 +62,8 @@ func handler(ctx context.Context, event events.CloudwatchLogsEvent) error {
 		return fmt.Errorf("classifyLogEvents: %w", err)
 	}
 
-	fmt.Println(results)
+	log.Printf("%+v\n", results)
+
 	return nil
 }
 

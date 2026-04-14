@@ -24,6 +24,8 @@ func New(config aws.Config, topicID string) *Client {
 func (c *Client) Notify(ctx context.Context, msg string) error {
 	_, err := c.c.Publish(ctx, &awssns.PublishInput{
 		TopicArn: aws.String(c.topicARN),
+		Subject:  aws.String("HIGH SEVERITY INCIDENT"),
+		Message:  aws.String(msg),
 	})
 	if err != nil {
 		return fmt.Errorf("publishing to sns: %w", err)
