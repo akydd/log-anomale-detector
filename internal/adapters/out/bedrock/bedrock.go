@@ -9,28 +9,63 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime"
+	brdocument "github.com/aws/aws-sdk-go-v2/service/bedrockruntime/document"
 	"github.com/aws/aws-sdk-go-v2/service/bedrockruntime/types"
 )
 
 const (
 	inferenceProfile = "global.anthropic.claude-opus-4-5-20251101-v1:0"
+	toolName         = "classify_logs"
 	modelPrompt      = `
 Analyse these webserver logs, classifying activity as one of:
 'Normal', '500 error spike', 'Auth attack', or 'Latency degradation'.
-Format the response as an array of json objects with the fields:
-flag - boolean, equal to true when log entries indicate anomalous activity, false otherwise
-timestamp - starting timestamp of the anomalous activity, RFC3339
-anomaly_type - one of '500 error spike', 'Auth attack', or 'Latency degradation'
-severity - the severity of the anomaly, LOW, MEDIUM, HIGH
-raw_evidence - contains the anomalous log entries
-bedrock_explanation - explanation of why the logs were flagged as anomalous
+Use the classify_logs tool to return the classification results.
 
-Log entries that are 'Normal' should only return a response: [{"flag": false}].
+Log entries that are 'Normal' should return a single result with flag set to false.
 
 A single batch of log entries may contain multiple anomalies.
-The logs entries are:
+The log entries are:
 `
 )
+
+var toolConfig = &types.ToolConfiguration{
+	Tools: []types.Tool{
+		&types.ToolMemberToolSpec{
+			Value: types.ToolSpecification{
+				Name:        aws.String(toolName),
+				Description: aws.String("Returns classification results for the provided log entries"),
+				InputSchema: &types.ToolInputSchemaMemberJson{
+					Value: brdocument.NewLazyDocument(map[string]interface{}{
+						"type": "object",
+						"properties": map[string]interface{}{
+							"results": map[string]interface{}{
+								"type": "array",
+								"items": map[string]interface{}{
+									"type": "object",
+									"properties": map[string]interface{}{
+										"flag":                map[string]interface{}{"type": "boolean"},
+										"timestamp":           map[string]interface{}{"type": "string", "format": "date-time"},
+										"anomaly_type":        map[string]interface{}{"type": "string", "enum": []string{"500 error spike", "Auth attack", "Latency degradation"}},
+										"severity":            map[string]interface{}{"type": "string", "enum": []string{"LOW", "MEDIUM", "HIGH"}},
+										"raw_evidence":        map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}},
+										"bedrock_explanation": map[string]interface{}{"type": "string"},
+									},
+									"required": []string{"flag"},
+								},
+							},
+						},
+						"required": []string{"results"},
+					}),
+				},
+			},
+		},
+	},
+	ToolChoice: &types.ToolChoiceMemberTool{
+		Value: types.SpecificToolChoice{
+			Name: aws.String(toolName),
+		},
+	},
+}
 
 type Client struct {
 	c         bedrockruntime.Client
@@ -47,6 +82,7 @@ func New(config aws.Config, accountID string) *Client {
 
 func (c *Client) Classify(ctx context.Context, logs []string) ([]domain.ClassifiedLogs, error) {
 	modelARN := fmt.Sprintf("arn:aws:bedrock:ca-west-1:%s:inference-profile/%s", c.accountID, inferenceProfile)
+
 	output, err := c.c.Converse(ctx, &bedrockruntime.ConverseInput{
 		ModelId: aws.String(modelARN),
 		Messages: []types.Message{
@@ -54,11 +90,12 @@ func (c *Client) Classify(ctx context.Context, logs []string) ([]domain.Classifi
 				Role: types.ConversationRoleUser,
 				Content: []types.ContentBlock{
 					&types.ContentBlockMemberText{
-						Value: modelPrompt + strings.Join(logs, ","),
+						Value: modelPrompt + strings.Join(logs, "\n"),
 					},
 				},
 			},
 		},
+		ToolConfig: toolConfig,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("invoking bedrock: %w", err)
@@ -66,15 +103,36 @@ func (c *Client) Classify(ctx context.Context, logs []string) ([]domain.Classifi
 
 	msg, ok := output.Output.(*types.ConverseOutputMemberMessage)
 	if !ok {
-		return nil, fmt.Errorf("could not convert response to text")
+		return nil, fmt.Errorf("unexpected output type from bedrock")
 	}
 
-	messageString := msg.Value.Content[0].(*types.ContentBlockMemberText).Value
-	var results []domain.ClassifiedLogs
-	err = json.Unmarshal([]byte(messageString), &results)
+	var toolUse *types.ToolUseBlock
+	for _, block := range msg.Value.Content {
+		if tu, ok := block.(*types.ContentBlockMemberToolUse); ok {
+			toolUse = &tu.Value
+			break
+		}
+	}
+	if toolUse == nil {
+		return nil, fmt.Errorf("no tool use block in bedrock response")
+	}
+
+	var raw interface{}
+	if err := toolUse.Input.UnmarshalSmithyDocument(&raw); err != nil {
+		return nil, fmt.Errorf("unmarshaling tool input: %w", err)
+	}
+
+	jsonBytes, err := json.Marshal(raw)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshaling model results: %w", err)
+		return nil, fmt.Errorf("marshaling tool input: %w", err)
 	}
 
-	return results, nil
+	var wrapper struct {
+		Results []domain.ClassifiedLogs `json:"results"`
+	}
+	if err := json.Unmarshal(jsonBytes, &wrapper); err != nil {
+		return nil, fmt.Errorf("unmarshaling classified logs: %w", err)
+	}
+
+	return wrapper.Results, nil
 }
