@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	modelID     = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
-	modelPrompt = `
+	inferenceProfile = "global.anthropic.claude-opus-4-5-20251101-v1:0"
+	modelPrompt      = `
 Analyse these webserver logs, classifying activity as one of:
 'Normal', '500 error spike', 'Auth attack', or 'Latency degradation'.
 Format the response as an array of json objects with the fields:
@@ -33,19 +33,22 @@ The logs entries are:
 )
 
 type Client struct {
-	c bedrockruntime.Client
+	c         bedrockruntime.Client
+	accountID string
 }
 
-func New(config aws.Config) *Client {
+func New(config aws.Config, accountID string) *Client {
 	awsClient := bedrockruntime.NewFromConfig(config)
 	return &Client{
-		c: *awsClient,
+		c:         *awsClient,
+		accountID: accountID,
 	}
 }
 
 func (c *Client) Classify(ctx context.Context, logs []string) ([]domain.ClassifiedLogs, error) {
+	modelARN := fmt.Sprintf("arn:aws:bedrock:ca-west-1:%s:inference-profile/%s", c.accountID, inferenceProfile)
 	output, err := c.c.Converse(ctx, &bedrockruntime.ConverseInput{
-		ModelId: aws.String(modelID),
+		ModelId: aws.String(modelARN),
 		Messages: []types.Message{
 			{
 				Role: types.ConversationRoleUser,
