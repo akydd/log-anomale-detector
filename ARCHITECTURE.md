@@ -8,8 +8,8 @@ A serverless AWS project that simulates realistic application logs, injects anom
 
 ### Log Generation Layer
 
-- **`log-generator` Lambda** — triggered by EventBridge every 1 minute, writes realistic HTTP access logs to CloudWatch (normal traffic: 200s, occasional 404s)
-- **`chaos-injector` Lambda** — invoked via API Gateway, writes a burst of anomalous log entries for a configurable duration. Anomaly types:
+- **`log-generator` Lambda** — triggered by EventBridge every 1 minute, writes realistic HTTP access logs to CloudWatch (normal traffic: 200s, occasional 404s). Logs 10 entries per invocation.
+- **`chaos-injector` Lambda** — invoked via API Gateway, writes a burst of anomalous log entries for a configurable duration (max 120 seconds). Anomaly types:
   - 500 error spike
   - Repeated auth failures (simulated brute force)
   - Latency outliers
@@ -41,8 +41,8 @@ Security is enforced through IAM identity and resource policies — not network 
 
 | Lambda | Allowed Actions | Scope |
 |---|---|---|
-| `log-generator` | `logs:PutLogEvents`, `logs:CreateLogStream` | Its own log group only |
-| `chaos-injector` | `logs:PutLogEvents`, `logs:CreateLogStream` | Its own log group only |
+| `log-generator` | `logs:PutLogEvents`, `logs:CreateLogStream` | Shared log group (`/aws/lambda/shared-logging`) |
+| `chaos-injector` | `logs:PutLogEvents`, `logs:CreateLogStream` | Shared log group (`/aws/lambda/shared-logging`) |
 | `anomaly-detector` | `bedrock:InvokeModel` | One model ARN (Claude) |
 | `anomaly-detector` | `dynamodb:PutItem` | One table |
 | `anomaly-detector` | `sns:Publish` | One topic ARN |
@@ -52,12 +52,10 @@ No Lambda role grants cross-function access. A compromised `log-generator` canno
 
 ### Resource-Based Policies
 
-Resources are locked from the receiving side as well:
-
 - **anomaly-detector Lambda** — accepts invocations only from the CloudWatch Logs service principal (`logs.amazonaws.com`) for the log group's subscription filter
-- **DynamoDB table** — accepts calls only from the `anomaly-detector` and `query` Lambda execution roles
-- **SNS topic** — accepts publishes only from the `anomaly-detector` Lambda execution role
-- **API Gateway** — protected by an API key; only requests with a valid key reach the `query` Lambda
+- **API Gateway** — protected by an API key; only requests with a valid key reach the Lambda functions
+
+DynamoDB and SNS do not use resource-based policies. Access is enforced entirely through IAM identity policies on the Lambda execution roles. Resource-based policies on these services are only necessary for cross-account access or confused deputy scenarios, neither of which applies to this single-account stack.
 
 ### Encryption
 

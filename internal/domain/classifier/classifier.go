@@ -35,7 +35,7 @@ func New(d db, n notifier, a ai) *Client {
 func (c *Client) Classify(ctx context.Context, logs []string) ([]domain.ClassifiedLogs, error) {
 	results, err := c.ai.Classify(ctx, logs)
 	if err != nil {
-		return nil, fmt.Errorf("classifyLogEvents: %w", err)
+		return nil, fmt.Errorf("ai.Classify: %w", err)
 	}
 
 	for _, r := range results {
@@ -48,8 +48,8 @@ func (c *Client) Classify(ctx context.Context, logs []string) ([]domain.Classifi
 			return nil, fmt.Errorf("writing to db: %w", err)
 		}
 
-		if *r.Severity == "HIGH" {
-			err = c.notifier.Notify(ctx, *r.BedrockExplanation)
+		if r.Severity == "HIGH" {
+			err = c.notifier.Notify(ctx, r.BedrockExplanation)
 			if err != nil {
 				return nil, fmt.Errorf("notifying: %w", err)
 			}

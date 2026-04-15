@@ -35,7 +35,7 @@ resource "aws_iam_role_policy" "log_generator" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/log-generator:*"
+        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/shared-logging:*"
       }
     ]
   })
@@ -127,7 +127,7 @@ resource "aws_iam_role_policy" "chaos_injector" {
           "logs:CreateLogStream",
           "logs:PutLogEvents"
         ]
-        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/chaos-injector:*"
+        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/shared-logging:*"
       }
     ]
   })

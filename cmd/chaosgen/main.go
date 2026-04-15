@@ -99,23 +99,31 @@ func handler(ctx context.Context, req events.APIGatewayProxyRequest) (events.API
 			Body:       `{"error":"body must be JSON with a positive \"duration\" (seconds) and a \"type\" of 500-spike, brute-force, or latency"}`,
 		}, nil
 	}
+	if p.Duration > 120 {
+		return events.APIGatewayProxyResponse{
+			StatusCode: http.StatusBadRequest,
+			Body:       `{"error":"duration cannot exceed 120 seconds"}`,
+		}, nil
+	}
 
 	dur := time.Duration(p.Duration) * time.Second
-	var count int
 
+	var fn func(time.Duration) int
 	switch p.Type {
 	case "500-spike":
-		count = generate500Spike(dur)
+		fn = generate500Spike
 	case "brute-force":
-		count = generateBruteForce(dur)
+		fn = generateBruteForce
 	case "latency":
-		count = generateLatencyOutliers(dur)
+		fn = generateLatencyOutliers
 	default:
 		return events.APIGatewayProxyResponse{
 			StatusCode: http.StatusBadRequest,
 			Body:       fmt.Sprintf(`{"error":"unknown type: %s"}`, p.Type),
 		}, nil
 	}
+
+	count := fn(dur)
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: http.StatusOK,

@@ -7,7 +7,13 @@ resource "aws_lambda_function" "log_generator" {
   filename         = "${path.module}/dist/log-generator.zip"
   source_code_hash = filebase64sha256("${path.module}/dist/log-generator.zip")
 
-  depends_on = [aws_cloudwatch_log_group.log_generator]
+  logging_config {
+    log_format            = "JSON" # Recommended for easier querying
+    application_log_level = "INFO"
+    system_log_level      = "WARN"
+    log_group             = aws_cloudwatch_log_group.shared_logging.name
+  }
+  depends_on = [aws_cloudwatch_log_group.shared_logging]
 }
 
 resource "aws_lambda_function" "detector" {
@@ -18,6 +24,7 @@ resource "aws_lambda_function" "detector" {
   architectures    = ["arm64"]
   filename         = "${path.module}/dist/detector.zip"
   source_code_hash = filebase64sha256("${path.module}/dist/detector.zip")
+  timeout          = 30
 
   environment {
     variables = {
@@ -38,6 +45,14 @@ resource "aws_lambda_function" "chaos_injector" {
   architectures    = ["arm64"]
   filename         = "${path.module}/dist/chaos-injector.zip"
   source_code_hash = filebase64sha256("${path.module}/dist/chaos-injector.zip")
+  timeout          = 180
 
-  depends_on = [aws_cloudwatch_log_group.chaos_injector]
+  logging_config {
+    log_format            = "JSON" # Recommended for easier querying
+    application_log_level = "INFO"
+    system_log_level      = "WARN"
+    log_group             = aws_cloudwatch_log_group.shared_logging.name
+  }
+
+  depends_on = [aws_cloudwatch_log_group.shared_logging]
 }

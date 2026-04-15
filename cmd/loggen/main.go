@@ -58,10 +58,12 @@ func generateLog(t time.Time) string {
 		ip, user, ts, path, status, size, referer, agent)
 }
 
-// handler outputs a single realistic HTTP access log entry per invocation,
+// handler outputs 10 realistic HTTP access log entries per invocation,
 // with a ~20% chance of a 404 and ~80% chance of a 200.
 func handler() {
-	fmt.Println(generateLog(time.Now()))
+	for range 10 {
+		fmt.Println(generateLog(time.Now()))
+	}
 }
 
 func main() {

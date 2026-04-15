@@ -21,7 +21,7 @@ Analyse these webserver logs, classifying activity as one of:
 'Normal', '500 error spike', 'Auth attack', or 'Latency degradation'.
 Use the classify_logs tool to return the classification results.
 
-Log entries that are 'Normal' should return a single result with flag set to false.
+A batch of log entries that are 'Normal' should have flag set to false.
 
 A single batch of log entries may contain multiple anomalies.
 The log entries are:
@@ -50,7 +50,7 @@ var toolConfig = &types.ToolConfiguration{
 										"raw_evidence":        map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}},
 										"bedrock_explanation": map[string]interface{}{"type": "string"},
 									},
-									"required": []string{"flag"},
+									"required": []string{"flag", "anomaly_type", "severity", "raw_evidence", "bedrock_explanation", "timestamp"},
 								},
 							},
 						},
