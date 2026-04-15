@@ -59,7 +59,7 @@ func handler(ctx context.Context, event events.CloudwatchLogsEvent) error {
 
 	results, err := c.Classify(ctx, logs)
 	if err != nil {
-		return fmt.Errorf("classifyLogEvents: %w", err)
+		return fmt.Errorf("Classify: %w", err)
 	}
 
 	log.Printf("%+v\n", results)

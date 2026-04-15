@@ -23,14 +23,73 @@ resource "aws_iam_role_policy" "log_generator" {
   role = aws_iam_role.log_generator.id
   policy = jsonencode({
     Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup"]
+        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/log-generator:*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role" "detector" {
+  name = "detector-lambda-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
-      Action = [
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ]
-      Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/log-generator:*"
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
     }]
+  })
+}
+
+resource "aws_iam_role_policy" "detector" {
+  name = "detector-lambda-policy"
+
+  role = aws_iam_role.detector.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup"]
+        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/detector:*"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["dynamodb:PutItem"]
+        Resource = "arn:aws:dynamodb:ca-west-1:${data.aws_caller_identity.current.account_id}:table/${var.db_table}"
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["sns:Publish"]
+        Resource = aws_sns_topic.alerts.arn
+      },
+      {
+        Effect   = "Allow"
+        Action   = ["bedrock:InvokeModel"]
+        Resource = "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"
+      }
+    ]
   })
 }
 
@@ -53,13 +112,20 @@ resource "aws_iam_role_policy" "chaos_injector" {
   role = aws_iam_role.chaos_injector.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = [
-        "logs:CreateLogStream",
-        "logs:PutLogEvents"
-      ]
-      Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/chaos-injector:*"
-    }]
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup"]
+        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/chaos-injector:*"
+      }
+    ]
   })
 }

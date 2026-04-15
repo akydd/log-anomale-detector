@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	modelID     = "anthropic.claude-3-haiku-20240307-v1:0"
+	modelID     = "us.anthropic.claude-haiku-4-5-20251001-v1:0"
 	modelPrompt = `
 Analyse these webserver logs, classifying activity as one of:
 'Normal', '500 error spike', 'Auth attack', or 'Latency degradation'.
