@@ -21,9 +21,16 @@ Analyse these webserver logs, classifying activity as one of:
 'Normal', '500 error spike', 'Auth attack', or 'Latency degradation'.
 Use the classify_logs tool to return the classification results.
 
-A batch of log entries that are 'Normal' should have flag set to false.
+A batch of log entries that are 'Normal' should only record the flag,
+timestamp, raw_evidence, and bedrock_explanation. The flag should be false in this case.
 
 A single batch of log entries may contain multiple anomalies.
+
+The logs are in Combined Log Format with an additional response time field (microseconds):
+host ident authuser [day/month/year:HH:MM:SS timezone] "method path protocol" status bytes "referer" "user-agent" response_time_microseconds
+
+Normal response times are under 500ms (500,000 microseconds). Response times above 1 second (1,000,000 microseconds) are elevated. Response times above 10 seconds (10,000,000 microseconds) are latency outliers and should be classified as 'Latency degradation'.
+
 The log entries are:
 `
 )
@@ -50,7 +57,7 @@ var toolConfig = &types.ToolConfiguration{
 										"raw_evidence":        map[string]interface{}{"type": "array", "items": map[string]interface{}{"type": "string"}},
 										"bedrock_explanation": map[string]interface{}{"type": "string"},
 									},
-									"required": []string{"flag", "anomaly_type", "severity", "raw_evidence", "bedrock_explanation", "timestamp"},
+									"required": []string{"flag", "bedrock_explanation", "timestamp"},
 								},
 							},
 						},

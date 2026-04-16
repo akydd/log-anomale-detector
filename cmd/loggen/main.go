@@ -54,8 +54,9 @@ func generateLog(t time.Time) string {
 		size = rand.Intn(30000) + 512
 	}
 
-	return fmt.Sprintf(`%s - %s [%s] "GET %s HTTP/1.1" %d %d "%s" "%s"`,
-		ip, user, ts, path, status, size, referer, agent)
+	responseTimeMicros := rand.Intn(495_000) + 5_000 // 5ms–500ms
+	return fmt.Sprintf(`%s - %s [%s] "GET %s HTTP/1.1" %d %d "%s" "%s" %d`,
+		ip, user, ts, path, status, size, referer, agent, responseTimeMicros)
 }
 
 // handler outputs 10 realistic HTTP access log entries per invocation,

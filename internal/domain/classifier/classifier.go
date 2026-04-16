@@ -48,7 +48,7 @@ func (c *Client) Classify(ctx context.Context, logs []string) ([]domain.Classifi
 			return nil, fmt.Errorf("writing to db: %w", err)
 		}
 
-		if r.Severity == "HIGH" {
+		if r.Severity != nil && *r.Severity == "HIGH" {
 			err = c.notifier.Notify(ctx, r.BedrockExplanation)
 			if err != nil {
 				return nil, fmt.Errorf("notifying: %w", err)

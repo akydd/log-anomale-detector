@@ -50,9 +50,10 @@ func generate500Spike(dur time.Duration) int {
 	deadline := time.Now().Add(dur)
 	count := 0
 	for time.Now().Before(deadline) {
-		fmt.Printf("%s - %s [%s] \"POST %s HTTP/1.1\" 500 %d \"%s\" \"%s\"\n",
+		responseTimeMicros := rand.Intn(4_000_000) + 1_000_000 // 1s–5s
+		fmt.Printf("%s - %s [%s] \"POST %s HTTP/1.1\" 500 %d \"%s\" \"%s\" %d\n",
 			pick(ips), pick(users), ts(time.Now()), pick(paths),
-			rand.Intn(200)+400, pick(referers), pick(agents))
+			rand.Intn(200)+400, pick(referers), pick(agents), responseTimeMicros)
 		count++
 		time.Sleep(time.Duration(rand.Intn(400)+100) * time.Millisecond)
 	}
@@ -66,8 +67,9 @@ func generateBruteForce(dur time.Duration) int {
 	deadline := time.Now().Add(dur)
 	count := 0
 	for time.Now().Before(deadline) {
-		fmt.Printf("%s - - [%s] \"POST /api/v1/login HTTP/1.1\" 401 64 \"-\" \"python-requests/2.31.0\"\n",
-			attackerIP, ts(time.Now()))
+		responseTimeMicros := rand.Intn(45_000) + 5_000 // 5ms–50ms
+		fmt.Printf("%s - - [%s] \"POST /api/v1/login HTTP/1.1\" 401 64 \"-\" \"python-requests/2.31.0\" %d\n",
+			attackerIP, ts(time.Now()), responseTimeMicros)
 		count++
 		time.Sleep(time.Second)
 	}

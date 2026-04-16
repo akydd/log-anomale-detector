@@ -75,13 +75,49 @@ func TestClassify_AuthAttack(t *testing.T) {
 			if r.Severity == nil {
 				t.Error("expected severity to be set")
 			}
-			if r.BedrockExplanation == nil {
+			if r.BedrockExplanation == "" {
 				t.Error("expected bedrock_explanation to be set")
 			}
 		}
 	}
 	if !flagged {
 		t.Error("expected anomaly to be detected in auth attack logs")
+	}
+}
+
+func TestClassify_LatencyOutliers(t *testing.T) {
+	c := newClient(t)
+
+	logs := []string{
+		`192.168.1.45 - alice [10/Apr/2026:12:00:01 -0700] "GET /api/v1/users HTTP/1.1" 200 1024 "-" "Mozilla/5.0" 15000000`,
+		`192.168.1.46 - bob [10/Apr/2026:12:00:02 -0700] "GET /api/v1/orders HTTP/1.1" 200 2048 "-" "Mozilla/5.0" 22000000`,
+		`192.168.1.47 - - [10/Apr/2026:12:00:03 -0700] "GET /api/v1/products HTTP/1.1" 200 512 "-" "Mozilla/5.0" 18000000`,
+		`192.168.1.48 - alice [10/Apr/2026:12:00:04 -0700] "GET /dashboard HTTP/1.1" 200 4096 "-" "Mozilla/5.0" 35000000`,
+		`192.168.1.49 - bob [10/Apr/2026:12:00:05 -0700] "GET /api/v1/reports HTTP/1.1" 200 8192 "-" "Mozilla/5.0" 29000000`,
+	}
+
+	results, err := c.Classify(context.Background(), logs)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var flagged bool
+	for _, r := range results {
+		if r.Flag {
+			flagged = true
+			if r.AnomalyType == nil {
+				t.Error("expected anomaly_type to be set")
+			}
+			if r.Severity == nil {
+				t.Error("expected severity to be set")
+			}
+			if r.BedrockExplanation == "" {
+				t.Error("expected bedrock_explanation to be set")
+			}
+		}
+	}
+	if !flagged {
+		t.Error("expected anomaly to be detected in latency outlier logs")
 	}
 }
 

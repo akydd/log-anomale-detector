@@ -26,8 +26,8 @@ func New(config aws.Config, tableName string) *Client {
 
 type logResults struct {
 	Timestamp          time.Time `dynamodbav:"timestamp"`
-	AnomalyType        string    `dynamodbav:"anomaly"`
-	Severity           string    `dynamodbav:"severity"`
+	AnomalyType        *string   `dynamodbav:"anomaly"`
+	Severity           *string   `dynamodbav:"severity"`
 	RawEvidence        []string  `dynamodbav:"raw_evidence"`
 	BedrockExplanation string    `dynamodbav:"bedrock_explanation"`
 }
