@@ -46,9 +46,21 @@ Security is enforced through IAM identity and resource policies — not network 
 | `anomaly-detector` | `bedrock:InvokeModel` | One model ARN (Claude) |
 | `anomaly-detector` | `dynamodb:PutItem` | One table |
 | `anomaly-detector` | `sns:Publish` | One topic ARN |
-| `query` | `dynamodb:Query`, `dynamodb:GetItem` | One table |
+| `query` | `dynamodb:Scan` | One table |
 
 No Lambda role grants cross-function access. A compromised `log-generator` cannot read DynamoDB or invoke Bedrock.
+
+> **Note:** The `query` Lambda uses `dynamodb:Scan` (not `Query` or `GetItem`) because the adapter paginates all records with `ScanPaginator`. The architecture doc originally listed `Query`/`GetItem` which was incorrect and caused an `AccessDeniedException` in production.
+
+### Stale Lambda Execution Environments
+
+After updating an IAM role policy, warm Lambda containers may continue to receive `AccessDeniedException` for a period even though IAM simulation reports the action as allowed. This happens because the warm execution environment holds STS credentials issued before the policy change. IAM evaluates policies at request time, but the Lambda service does not immediately refresh credentials in warm containers.
+
+**Workaround:** Force a cold start by updating any Lambda configuration field:
+
+```sh
+aws lambda update-function-configuration --function-name <name> --description "force-refresh-$(date +%s)"
+```
 
 ### Resource-Based Policies
 

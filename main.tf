@@ -169,8 +169,7 @@ resource "aws_iam_role_policy" "query" {
       {
         Effect = "Allow"
         Action = [
-          "dynamodb:Query",
-          "dynamodb:GetItem",
+          "dynamodb:Scan",
         ]
         Resource = "arn:aws:dynamodb:ca-west-1:${data.aws_caller_identity.current.account_id}:table/${var.db_table}"
       },

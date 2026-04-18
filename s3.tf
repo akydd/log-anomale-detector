@@ -40,11 +40,11 @@ resource "aws_s3_object" "dashboard" {
   key          = "index.html"
   content_type = "text/html"
   content = templatefile("${path.module}/dashboard/index.html", {
-    query_endpoint = "${aws_api_gateway_stage.prod.invoke_url}/query"
+    query_endpoint = "${aws_api_gateway_stage.prod.invoke_url}/query",
     api_key        = aws_api_gateway_api_key.main.value
   })
   etag = md5(templatefile("${path.module}/dashboard/index.html", {
-    query_endpoint = "${aws_api_gateway_stage.prod.invoke_url}/query"
+    query_endpoint = "${aws_api_gateway_stage.prod.invoke_url}/query",
     api_key        = aws_api_gateway_api_key.main.value
   }))
 }

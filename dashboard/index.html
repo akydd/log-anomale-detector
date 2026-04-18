@@ -59,12 +59,12 @@
         rowsEl.innerHTML = data.length === 0
           ? `<tr><td colspan="5" style="text-align:center;color:#999">No anomalies detected</td></tr>`
           : data.map(row => `
-              <tr class="${(row.severity ?? "").toLowerCase() === "high" ? "high" : ""}">
-                <td>${new Date(row.timestamp).toLocaleString()}</td>
-                <td>${row.anomaly_type ?? "—"}</td>
-                <td>${row.severity ?? "—"}</td>
-                <td>${row.bedrock_explanation}</td>
-                <td class="evidence">${(row.raw_evidence ?? []).join("<br>")}</td>
+              <tr class="$${(row.severity ?? "").toLowerCase() === "high" ? "high" : ""}">
+                <td>$${new Date(row.timestamp).toLocaleString()}</td>
+                <td>$${row.anomaly_type ?? "—"}</td>
+                <td>$${row.severity ?? "—"}</td>
+                <td>$${row.bedrock_explanation}</td>
+                <td class="evidence">$${(row.raw_evidence ?? []).join("<br>")}</td>
               </tr>`).join("");
 
         errorEl.textContent = "";
