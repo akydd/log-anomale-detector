@@ -25,6 +25,29 @@ resource "aws_api_gateway_integration" "chaos_post" {
   uri                     = aws_lambda_function.chaos_injector.invoke_arn
 }
 
+resource "aws_api_gateway_resource" "query" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  parent_id   = aws_api_gateway_rest_api.main.root_resource_id
+  path_part   = "query"
+}
+
+resource "aws_api_gateway_method" "query_get" {
+  rest_api_id      = aws_api_gateway_rest_api.main.id
+  resource_id      = aws_api_gateway_resource.query.id
+  http_method      = "GET"
+  authorization    = "NONE"
+  api_key_required = true
+}
+
+resource "aws_api_gateway_integration" "query_post" {
+  rest_api_id             = aws_api_gateway_rest_api.main.id
+  resource_id             = aws_api_gateway_resource.query.id
+  http_method             = aws_api_gateway_method.query_get.http_method
+  integration_http_method = "POST"
+  type                    = "AWS_PROXY"
+  uri                     = aws_lambda_function.query.invoke_arn
+}
+
 resource "aws_api_gateway_deployment" "main" {
   rest_api_id = aws_api_gateway_rest_api.main.id
 
@@ -33,6 +56,9 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_resource.chaos,
       aws_api_gateway_method.chaos_post,
       aws_api_gateway_integration.chaos_post,
+      aws_api_gateway_resource.query,
+      aws_api_gateway_method.query_get,
+      aws_api_gateway_integration.query_post,
     ]))
   }
 
@@ -40,7 +66,10 @@ resource "aws_api_gateway_deployment" "main" {
     create_before_destroy = true
   }
 
-  depends_on = [aws_api_gateway_integration.chaos_post]
+  depends_on = [
+    aws_api_gateway_integration.chaos_post,
+    aws_api_gateway_integration.query_post,
+  ]
 }
 
 resource "aws_api_gateway_stage" "prod" {
@@ -78,6 +107,18 @@ resource "aws_lambda_permission" "chaos_injector" {
 
 output "chaos_endpoint" {
   value = "${aws_api_gateway_stage.prod.invoke_url}/chaos"
+}
+
+resource "aws_lambda_permission" "query" {
+  statement_id  = "AllowAPIGatewayInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.query.function_name
+  principal     = "apigateway.amazonaws.com"
+  source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
+}
+
+output "query_endpoint" {
+  value = "${aws_api_gateway_stage.prod.invoke_url}/query"
 }
 
 output "api_key" {

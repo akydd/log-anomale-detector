@@ -132,3 +132,48 @@ resource "aws_iam_role_policy" "chaos_injector" {
     ]
   })
 }
+
+resource "aws_iam_role" "query" {
+  name = "query-lambda-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect    = "Allow"
+      Principal = { Service = "lambda.amazonaws.com" }
+      Action    = "sts:AssumeRole"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "query" {
+  name = "query-lambda-policy"
+
+  role = aws_iam_role.query.id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup"]
+        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:ca-west-1:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/query:*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "dynamodb:Query",
+          "dynamodb:GetItem",
+        ]
+        Resource = "arn:aws:dynamodb:ca-west-1:${data.aws_caller_identity.current.account_id}:table/${var.db_table}"
+      },
+    ]
+  })
+}

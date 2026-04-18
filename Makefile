@@ -8,6 +8,8 @@ build:
 	zip -j dist/chaos-injector.zip bootstrap
 	GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o bootstrap ./cmd/detector
 	zip -j dist/detector.zip bootstrap
+	GOOS=linux GOARCH=arm64 go build -tags lambda.norpc -o bootstrap ./cmd/query
+	zip -j dist/query.zip bootstrap
 	rm -f bootstrap
 
 clean:

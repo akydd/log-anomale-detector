@@ -16,6 +16,26 @@ resource "aws_lambda_function" "log_generator" {
   depends_on = [aws_cloudwatch_log_group.shared_logging]
 }
 
+resource "aws_lambda_function" "chaos_injector" {
+  function_name    = "chaos-injector"
+  role             = aws_iam_role.chaos_injector.arn
+  runtime          = "provided.al2023"
+  handler          = "bootstrap"
+  architectures    = ["arm64"]
+  filename         = "${path.module}/dist/chaos-injector.zip"
+  source_code_hash = filebase64sha256("${path.module}/dist/chaos-injector.zip")
+  timeout          = 180
+
+  logging_config {
+    log_format            = "JSON" # Recommended for easier querying
+    application_log_level = "INFO"
+    system_log_level      = "WARN"
+    log_group             = aws_cloudwatch_log_group.shared_logging.name
+  }
+
+  depends_on = [aws_cloudwatch_log_group.shared_logging]
+}
+
 resource "aws_lambda_function" "detector" {
   function_name    = "detector"
   role             = aws_iam_role.detector.arn
@@ -37,22 +57,21 @@ resource "aws_lambda_function" "detector" {
   depends_on = [aws_cloudwatch_log_group.detector]
 }
 
-resource "aws_lambda_function" "chaos_injector" {
-  function_name    = "chaos-injector"
-  role             = aws_iam_role.chaos_injector.arn
+resource "aws_lambda_function" "query" {
+  function_name    = "query"
+  role             = aws_iam_role.query.arn
   runtime          = "provided.al2023"
   handler          = "bootstrap"
   architectures    = ["arm64"]
-  filename         = "${path.module}/dist/chaos-injector.zip"
-  source_code_hash = filebase64sha256("${path.module}/dist/chaos-injector.zip")
-  timeout          = 180
+  filename         = "${path.module}/dist/query.zip"
+  source_code_hash = filebase64sha256("${path.module}/dist/query.zip")
+  timeout          = 30
 
-  logging_config {
-    log_format            = "JSON" # Recommended for easier querying
-    application_log_level = "INFO"
-    system_log_level      = "WARN"
-    log_group             = aws_cloudwatch_log_group.shared_logging.name
+  environment {
+    variables = {
+      TABLE_NAME = var.db_table
+    }
   }
 
-  depends_on = [aws_cloudwatch_log_group.shared_logging]
+  depends_on = [aws_cloudwatch_log_group.query]
 }
