@@ -44,6 +44,10 @@ func handler(ctx context.Context) (events.APIGatewayProxyResponse, error) {
 		return events.APIGatewayProxyResponse{
 			StatusCode: 500,
 			Body:       "internal server error",
+			Headers: map[string]string{
+				"Content-Type":                "application/json",
+				"Access_control-Allow-Origin": "*",
+			},
 		}, nil
 	}
 
@@ -53,13 +57,20 @@ func handler(ctx context.Context) (events.APIGatewayProxyResponse, error) {
 		return events.APIGatewayProxyResponse{
 			StatusCode: 500,
 			Body:       "internal server error",
+			Headers: map[string]string{
+				"Content-Type":                "application/json",
+				"Access_control-Allow-Origin": "*",
+			},
 		}, nil
 	}
 
 	return events.APIGatewayProxyResponse{
 		StatusCode: 200,
-		Headers:    map[string]string{"Content-Type": "application/json"},
-		Body:       string(body),
+		Headers: map[string]string{
+			"Content-Type":                "application/json",
+			"Access_control-Allow-Origin": "*",
+		},
+		Body: string(body),
 	}, nil
 }
 
