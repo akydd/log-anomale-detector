@@ -83,9 +83,6 @@ None of the services in this stack require VPC placement — all communication i
 ## Infrastructure
 
 - **IaC:** Terraform
-- **CI/CD:** GitHub Actions
-  - On PR: lint → unit tests → `terraform plan`
-  - On merge to main: `terraform apply`
 
 ## Language
 
