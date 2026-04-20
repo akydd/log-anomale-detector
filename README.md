@@ -2,6 +2,9 @@
 
 A serverless AWS project that simulates realistic HTTP access logs, injects anomalous traffic patterns, detects anomalies in real time using Bedrock (Claude), and alerts via SNS. See [ARCHITECTURE.md](ARCHITECTURE.md) for a full system overview.
 
+## Diagram
+![Arch diagram](log-detector.drawio.png)
+
 ## Prerequisites
 
 - Go 1.21+
