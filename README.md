@@ -60,7 +60,7 @@ Navigate to the `dashboard_url` output in a browser. It polls `GET /query` every
 curl -X POST https://<chaos_endpoint> \
   -H "x-api-key: <api_key>" \
   -H "Content-Type: application/json" \
-  -d '{"duration_seconds": 60, "anomaly_type": "500_spike"}'
+  -d '{"duration_seconds": 20, "anomaly_type": "500_spike"}'
 ```
 
 Available `anomaly_type` values: `500_spike`, `auth_failure`, `latency`.
