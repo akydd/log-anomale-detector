@@ -1,5 +1,6 @@
 resource "aws_s3_bucket" "dashboard" {
   bucket_prefix = "log-anomaly-dashboard-"
+  force_destroy = true
 }
 
 resource "aws_s3_bucket_public_access_block" "dashboard" {

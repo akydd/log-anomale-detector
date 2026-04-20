@@ -48,6 +48,52 @@ resource "aws_api_gateway_integration" "query_post" {
   uri                     = aws_lambda_function.query.invoke_arn
 }
 
+resource "aws_api_gateway_method" "query_options" {
+  rest_api_id   = aws_api_gateway_rest_api.main.id
+  resource_id   = aws_api_gateway_resource.query.id
+  http_method   = "OPTIONS"
+  authorization = "NONE"
+}
+
+resource "aws_api_gateway_integration" "query_options" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.query.id
+  http_method = aws_api_gateway_method.query_options.http_method
+  type        = "MOCK"
+
+  request_templates = {
+    "application/json" = "{\"statusCode\": 200}"
+  }
+}
+
+resource "aws_api_gateway_method_response" "query_options" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.query.id
+  http_method = aws_api_gateway_method.query_options.http_method
+  status_code = "200"
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = true
+    "method.response.header.Access-Control-Allow-Methods" = true
+    "method.response.header.Access-Control-Allow-Origin"  = true
+  }
+}
+
+resource "aws_api_gateway_integration_response" "query_options" {
+  rest_api_id = aws_api_gateway_rest_api.main.id
+  resource_id = aws_api_gateway_resource.query.id
+  http_method = aws_api_gateway_method.query_options.http_method
+  status_code = aws_api_gateway_method_response.query_options.status_code
+
+  response_parameters = {
+    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,x-api-key'"
+    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+  }
+
+  depends_on = [aws_api_gateway_integration.query_options]
+}
+
 resource "aws_api_gateway_deployment" "main" {
   rest_api_id = aws_api_gateway_rest_api.main.id
 
@@ -59,6 +105,8 @@ resource "aws_api_gateway_deployment" "main" {
       aws_api_gateway_resource.query,
       aws_api_gateway_method.query_get,
       aws_api_gateway_integration.query_post,
+      aws_api_gateway_method.query_options,
+      aws_api_gateway_integration_response.query_options,
     ]))
   }
 
@@ -69,6 +117,7 @@ resource "aws_api_gateway_deployment" "main" {
   depends_on = [
     aws_api_gateway_integration.chaos_post,
     aws_api_gateway_integration.query_post,
+    aws_api_gateway_integration_response.query_options,
   ]
 }
 

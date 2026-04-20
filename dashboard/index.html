@@ -70,6 +70,7 @@
         errorEl.textContent = "";
         statusEl.textContent = `Last updated: $${new Date().toLocaleTimeString()} — refreshes every 30s`;
       } catch (e) {
+        console.error("Failed to load anomalies:", e);
         errorEl.textContent = `Error fetching data: $${e.message}`;
         statusEl.textContent = "—";
       }

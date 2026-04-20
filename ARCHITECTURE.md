@@ -31,7 +31,7 @@ A serverless AWS project that simulates realistic application logs, injects anom
 ### Dashboard / API
 
 - **API Gateway** (API key auth) + **`query` Lambda** → reads DynamoDB → returns anomaly history as JSON
-- Optional: S3-hosted static HTML dashboard that polls the API and displays incidents
+- S3-hosted static HTML dashboard that polls `GET /query` every 30 seconds and displays incidents in a table, with HIGH severity rows highlighted. The API key and endpoint are injected at deploy time via Terraform `templatefile()`.
 
 ## Security
 
@@ -66,6 +66,7 @@ aws lambda update-function-configuration --function-name <name> --description "f
 
 - **anomaly-detector Lambda** — accepts invocations only from the CloudWatch Logs service principal (`logs.amazonaws.com`) for the log group's subscription filter
 - **API Gateway** — protected by an API key; only requests with a valid key reach the Lambda functions
+- **`GET /query`** — requires `x-api-key` header, which is a non-simple CORS header and triggers a browser preflight. A mock `OPTIONS /query` method is configured in API Gateway to respond to the preflight without invoking Lambda, returning the required `Access-Control-Allow-Headers`, `Access-Control-Allow-Methods`, and `Access-Control-Allow-Origin` headers.
 
 DynamoDB and SNS do not use resource-based policies. Access is enforced entirely through IAM identity policies on the Lambda execution roles. Resource-based policies on these services are only necessary for cross-account access or confused deputy scenarios, neither of which applies to this single-account stack.
 
