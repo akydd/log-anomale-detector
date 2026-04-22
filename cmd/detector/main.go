@@ -23,6 +23,7 @@ var bedrockClient *bedrock.Client
 var snsTopicARN string
 var tableName string
 var accountID string
+var modelID string
 var c *classifier.Client
 
 // Clients are initialized here so that warm Lambda invocations can reuse it.
@@ -39,13 +40,17 @@ func init() {
 	if accountID == "" {
 		log.Fatalf("AWS_ACCOUNT_ID must be set")
 	}
+	modelID = os.Getenv("MODEL_ID")
+	if modelID == "" {
+		log.Fatalf("MODEL_ID must be set")
+	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		log.Fatalf("loading AWS config: %v", err)
 	}
 	dynamoClient = dynamodb.New(cfg, tableName)
-	bedrockClient = bedrock.New(cfg, accountID)
+	bedrockClient = bedrock.New(cfg, accountID, modelID)
 	snsClient = sns.New(cfg, snsTopicARN)
 
 	c = classifier.New(dynamoClient, snsClient, bedrockClient)

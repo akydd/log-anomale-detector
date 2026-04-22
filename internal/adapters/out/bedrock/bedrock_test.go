@@ -17,13 +17,17 @@ func newClient(t *testing.T) *bedrock.Client {
 	if accountID == "" {
 		t.Skip("AWS_ACCOUNT_ID not set, skipping integration test")
 	}
+	modelID := os.Getenv("MODEL_ID")
+	if modelID == "" {
+		t.Skip("MODEL_ID not set, skipping integration test")
+	}
 
 	cfg, err := config.LoadDefaultConfig(context.Background())
 	if err != nil {
 		t.Fatalf("loading AWS config: %v", err)
 	}
 
-	return bedrock.New(cfg, accountID)
+	return bedrock.New(cfg, accountID, modelID)
 }
 
 func TestClassify_NormalLogs(t *testing.T) {

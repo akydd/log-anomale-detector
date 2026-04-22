@@ -51,6 +51,7 @@ resource "aws_lambda_function" "detector" {
       TABLE_NAME     = var.db_table
       SNS_TOPIC_ARN  = aws_sns_topic.alerts.arn
       AWS_ACCOUNT_ID = data.aws_caller_identity.current.account_id
+      MODEL_ID       = var.model_id
     }
   }
 

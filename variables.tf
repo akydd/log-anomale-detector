@@ -7,3 +7,8 @@ variable "alerts_email" {
   description = "Email that receives alerts"
   type        = string
 }
+
+variable "model_id" {
+  description = "Bedrock inference profile ID"
+  type        = string
+}

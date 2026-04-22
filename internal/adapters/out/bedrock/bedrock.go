@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	inferenceProfile = "global.anthropic.claude-opus-4-5-20251101-v1:0"
-	toolName         = "classify_logs"
+	toolName = "classify_logs"
 	modelPrompt      = `
 Analyse these webserver logs, classifying activity as one of:
 'Normal', '500 error spike', 'Auth attack', or 'Latency degradation'.
@@ -77,18 +76,20 @@ var toolConfig = &types.ToolConfiguration{
 type Client struct {
 	c         bedrockruntime.Client
 	accountID string
+	modelID   string
 }
 
-func New(config aws.Config, accountID string) *Client {
+func New(config aws.Config, accountID, modelID string) *Client {
 	awsClient := bedrockruntime.NewFromConfig(config)
 	return &Client{
 		c:         *awsClient,
 		accountID: accountID,
+		modelID:   modelID,
 	}
 }
 
 func (c *Client) Classify(ctx context.Context, logs []string) ([]domain.ClassifiedLogs, error) {
-	modelARN := fmt.Sprintf("arn:aws:bedrock:ca-west-1:%s:inference-profile/%s", c.accountID, inferenceProfile)
+	modelARN := fmt.Sprintf("arn:aws:bedrock:ca-west-1:%s:inference-profile/%s", c.accountID, c.modelID)
 
 	output, err := c.c.Converse(ctx, &bedrockruntime.ConverseInput{
 		ModelId: aws.String(modelARN),

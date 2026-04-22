@@ -10,7 +10,7 @@ A serverless AWS project that simulates realistic HTTP access logs, injects anom
 - Go 1.21+
 - Terraform >= 1.14
 - AWS CLI, configured with credentials for your target account
-- AWS account with Bedrock access enabled for `anthropic.claude-opus-4-5-20251101-v1:0` in `ca-west-1`
+- AWS account with Bedrock access enabled for your chosen model in `ca-west-1`
 
 ## Build
 
@@ -29,9 +29,12 @@ Output zips are written to `dist/`.
 ```hcl
 db_table     = "classified_logs"
 alerts_email = "you@example.com"
+model_id     = "global.anthropic.claude-opus-4-5-20251101-v1:0"
 ```
 
 `alerts_email` receives SNS notifications for HIGH severity anomalies. You will get a confirmation email from AWS — you must click the link before alerts will be delivered.
+
+`model_id` is the Bedrock inference profile ID passed to the detector Lambda. Ensure your account has access to this model in `ca-west-1`.
 
 ### 2. Apply
 
@@ -75,11 +78,14 @@ Within ~60 seconds:
 
 The e2e tests hit real AWS services. They require `AWS_ACCOUNT_ID` to be set (gates the entire suite) and `QUERY_ENDPOINT`/`API_KEY` for the HTTP endpoint tests (skipped individually if not set).
 
+The Bedrock integration tests (`./internal/adapters/out/bedrock/`) additionally require `MODEL_ID` and are skipped if either env var is absent.
+
 ```sh
 AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text) \
+MODEL_ID=global.anthropic.claude-opus-4-5-20251101-v1:0 \
 QUERY_ENDPOINT=$(terraform output -raw query_endpoint) \
 API_KEY=$(terraform output -raw api_key) \
-go test ./e2e/ -v
+go test ./... -v
 ```
 
 ## Teardown
